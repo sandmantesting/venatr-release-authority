@@ -1,0 +1,29 @@
+{
+  "contract": "venatr_public_release_authority_policy_v1",
+  "version": 1,
+  "status": "ratified",
+  "authority_repository": "sandmantesting/venatr-release-authority",
+  "source_repository": "sandmantesting/Venatr",
+  "source_visibility": "private",
+  "authority_visibility": "public",
+  "protected_branch": "main",
+  "protected_tag_pattern": "venatr-*",
+  "required_check": "Authority CI / Verify public authority",
+  "required_independent_approvals": 1,
+  "administrator_bypass": "forbidden",
+  "self_approval": "forbidden",
+  "signing": {
+    "mode": "github_oidc_conditioned_non_exportable_kms",
+    "issuer": "https://token.actions.githubusercontent.com",
+    "audience": "venatr-release-authority",
+    "environment": "venatr-production-promotion",
+    "workflow_path": ".github/workflows/bootstrap-generation-zero.yml",
+    "raw_private_key": "forbidden"
+  },
+  "bootstrap": {
+    "generation": 0,
+    "previous_state": null,
+    "required_phases": ["P0", "P1", "P2", "P3", "P4", "P5", "P6", "P7"]
+  }
+}
+

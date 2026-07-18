@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://venatr.dev/authority/release-candidate-request-v1.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract", "candidate_id", "generation", "source_repository", "source_revision",
+    "source_tree", "source_archive_sha256", "release_definition_sha256",
+    "material_snapshot_sha256", "qualification_evidence", "previous_authority_state_sha256",
+    "request_sha256"
+  ],
+  "properties": {
+    "contract": {"const": "venatr_release_candidate_request_v1"},
+    "candidate_id": {"type": "string", "pattern": "^venatr-[0-9a-f]{12}-[0-9a-f]{12}$"},
+    "generation": {"type": "integer", "minimum": 0},
+    "source_repository": {"const": "sandmantesting/Venatr"},
+    "source_revision": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "source_tree": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "source_archive_sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "release_definition_sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "material_snapshot_sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "qualification_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["P0", "P1", "P2", "P3", "P4", "P5", "P6", "P7"],
+      "properties": {
+        "P0": {"$ref": "#/$defs/evidence"}, "P1": {"$ref": "#/$defs/evidence"},
+        "P2": {"$ref": "#/$defs/evidence"}, "P3": {"$ref": "#/$defs/evidence"},
+        "P4": {"$ref": "#/$defs/evidence"}, "P5": {"$ref": "#/$defs/evidence"},
+        "P6": {"$ref": "#/$defs/evidence"}, "P7": {"$ref": "#/$defs/evidence"}
+      }
+    },
+    "previous_authority_state_sha256": {
+      "oneOf": [{"type": "null"}, {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}]
+    },
+    "request_sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}
+  },
+  "$defs": {
+    "evidence": {
+      "type": "object", "additionalProperties": false,
+      "required": ["manifest_sha256", "status"],
+      "properties": {
+        "manifest_sha256": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+        "status": {"const": "passed"}
+      }
+    }
+  }
+}
+
