@@ -14,10 +14,9 @@ Production rules:
 
 - `main` and `venatr-*` tags are protected.
 - Direct pushes, force pushes, deletion, administrator bypass and self-approval are forbidden.
-- `Authority CI / Verify public authority` is required.
+- `Verify public authority` is required.
 - Candidate requests carry hashes, never private source or artifacts.
 - Generation zero has no predecessor. Every later state must name and hash its predecessor.
 - Private signing keys are never GitHub secrets or repository files.
 
 See [SECURITY.md](SECURITY.md) for the disclosure boundary.
-

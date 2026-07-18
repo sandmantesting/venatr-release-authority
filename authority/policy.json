@@ -8,7 +8,7 @@
   "authority_visibility": "public",
   "protected_branch": "main",
   "protected_tag_pattern": "venatr-*",
-  "required_check": "Authority CI / Verify public authority",
+  "required_check": "Verify public authority",
   "required_independent_approvals": 1,
   "administrator_bypass": "forbidden",
   "self_approval": "forbidden",
@@ -26,4 +26,3 @@
     "required_phases": ["P0", "P1", "P2", "P3", "P4", "P5", "P6", "P7"]
   }
 }
-
