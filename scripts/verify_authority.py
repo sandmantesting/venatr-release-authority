@@ -141,7 +141,10 @@ def workflow_blockers(root: Path) -> list[str]:
         "--source-ref refs/heads/main",
         "--deny-self-hosted-runners",
     )
-    forbidden = ("aws-actions/", "awskms://", "KMS_KEY_URI", "release-signing-root.pub", "sigstore/cosign")
+    forbidden = (
+        "aws-actions/", "awskms://", "KMS_KEY_URI", "release-signing-root.pub",
+        "sigstore/cosign", "--signer-workflow",
+    )
     blockers = [f"BOOTSTRAP_WORKFLOW_REQUIREMENT_MISSING:{value}" for value in required if value not in content]
     blockers.extend(f"BOOTSTRAP_WORKFLOW_FORBIDDEN:{value}" for value in forbidden if value in content)
     return sorted(set(blockers))
@@ -162,7 +165,7 @@ def qualification_workflow_blockers(root: Path) -> list[str]:
         "--deny-self-hosted-runners",
         "verifiedTimestamps",
     )
-    forbidden = ("aws-actions/", "awskms://", "KMS_KEY_URI", "sigstore/cosign")
+    forbidden = ("aws-actions/", "awskms://", "KMS_KEY_URI", "sigstore/cosign", "--signer-workflow")
     blockers = [f"KEYLESS_QUALIFICATION_REQUIREMENT_MISSING:{value}" for value in required if value not in content]
     blockers.extend(f"KEYLESS_QUALIFICATION_FORBIDDEN:{value}" for value in forbidden if value in content)
     return sorted(set(blockers))

@@ -42,7 +42,6 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --cert-identity "https://github.com/sandmantesting/venatr-release-authority/.github/workflows/verify-keyless-authority.yml@refs/heads/main" \
             --cert-oidc-issuer "https://token.actions.githubusercontent.com" \
-            --signer-workflow "sandmantesting/venatr-release-authority/.github/workflows/verify-keyless-authority.yml" \
             --signer-digest "$GITHUB_WORKFLOW_SHA" \
             --source-ref refs/heads/main \
             --source-digest "$GITHUB_WORKFLOW_SHA" \
