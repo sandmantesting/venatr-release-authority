@@ -78,4 +78,4 @@ jobs:
           git push origin "$BRANCH"
           gh pr create --base main --head "$BRANCH" \
             --title "release: persist Venatr generation zero" \
-            --body "KMS-signed generation-zero authority state. Requires independent review and Authority CI; do not squash or rebase."
+            --body "KMS-signed generation-zero authority state. Requires independent review and Authority CI. The protected squash merge must not modify either signed file."
