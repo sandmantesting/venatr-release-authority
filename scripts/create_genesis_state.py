@@ -47,6 +47,13 @@ def main() -> int:
         "source_revision": request["source_revision"],
         "source_tree": request["source_tree"],
         "source_archive_sha256": request["source_archive_sha256"],
+        "release_definition_sha256": request["release_definition_sha256"],
+        "material_snapshot_sha256": request["material_snapshot_sha256"],
+        "release_set_sha256": request["release_set_sha256"],
+        "evidence_root_index_sha256": request["evidence_root_index_sha256"],
+        "role_assignments_sha256": request["role_assignments_sha256"],
+        "environment_assignments_sha256": request["environment_assignments_sha256"],
+        "qualification_evidence": request["qualification_evidence"],
         "candidate_request_sha256": request["request_sha256"],
         "previous_authority_state_sha256": None,
         "issued_at": dt.datetime.now(dt.UTC).isoformat().replace("+00:00", "Z"),
@@ -64,4 +71,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
