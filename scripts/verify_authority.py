@@ -171,6 +171,22 @@ def qualification_workflow_blockers(root: Path) -> list[str]:
     return sorted(set(blockers))
 
 
+def action_pin_blockers(root: Path) -> list[str]:
+    blockers: list[str] = []
+    workflow_root = root / ".github/workflows"
+    for path in sorted(workflow_root.glob("*.yml")):
+        relative = path.relative_to(root).as_posix()
+        for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            match = re.search(r"\buses:\s*([^\s#]+)", line)
+            if match is None:
+                continue
+            reference = match.group(1)
+            revision = reference.rsplit("@", 1)[-1] if "@" in reference else ""
+            if re.fullmatch(r"[0-9a-f]{40}", revision) is None:
+                blockers.append(f"ACTION_NOT_SHA_PINNED:{relative}:{line_number}:{reference}")
+    return sorted(set(blockers))
+
+
 def hygiene_blockers(root: Path) -> list[str]:
     blockers: list[str] = []
     for path in sorted(root.rglob("*")):
@@ -202,6 +218,7 @@ def main() -> int:
     blockers.extend(policy_blockers(policy))
     blockers.extend(workflow_blockers(args.root.resolve()))
     blockers.extend(qualification_workflow_blockers(args.root.resolve()))
+    blockers.extend(action_pin_blockers(args.root.resolve()))
     if args.request:
         blockers.extend(request_blockers(load(args.request.resolve()), policy))
     result = {"status": "passed" if not blockers else "blocked", "blockers": sorted(set(blockers))}
