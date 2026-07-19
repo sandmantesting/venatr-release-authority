@@ -22,6 +22,7 @@
     "repository_owner_id": 306626219,
     "environment": "venatr-production-promotion",
     "workflow_path": ".github/workflows/bootstrap-generation-zero.yml",
+    "qualification_workflow_path": ".github/workflows/verify-keyless-authority.yml",
     "trusted_root": "sigstore_public_good_tuf",
     "transparency_log": "rekor",
     "offline_bundle_required": true,
