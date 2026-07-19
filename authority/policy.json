@@ -14,13 +14,17 @@
   "administrator_bypass": "forbidden",
   "self_approval": "forbidden",
   "signing": {
-    "mode": "github_oidc_conditioned_non_exportable_kms",
+    "mode": "github_oidc_sigstore_public_good_keyless",
+    "cost_model": "zero_monetary_service_cost",
     "issuer": "https://token.actions.githubusercontent.com",
-    "audience": "venatr-release-authority",
-    "subject": "repo:sandmantesting/venatr-release-authority:environment:venatr-production-promotion",
+    "certificate_identity": "https://github.com/sandmantesting/venatr-release-authority/.github/workflows/bootstrap-generation-zero.yml@refs/heads/main",
+    "repository_id": 1305288232,
+    "repository_owner_id": 306626219,
     "environment": "venatr-production-promotion",
     "workflow_path": ".github/workflows/bootstrap-generation-zero.yml",
-    "pinned_public_key": "authority/release-signing-root.pub",
+    "trusted_root": "sigstore_public_good_tuf",
+    "transparency_log": "rekor",
+    "offline_bundle_required": true,
     "raw_private_key": "forbidden"
   },
   "bootstrap": {

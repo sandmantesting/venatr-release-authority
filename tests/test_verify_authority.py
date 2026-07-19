@@ -5,7 +5,16 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.verify_authority import digest, canonical, hygiene_blockers, request_blockers
+from scripts.verify_authority import (
+    ROOT,
+    canonical,
+    digest,
+    hygiene_blockers,
+    load,
+    policy_blockers,
+    request_blockers,
+    workflow_blockers,
+)
 
 
 POLICY = {
@@ -35,6 +44,17 @@ def request() -> dict:
 
 
 class AuthorityVerifierTests(unittest.TestCase):
+    def test_keyless_signing_policy_is_exact(self) -> None:
+        self.assertEqual(policy_blockers(load(ROOT / "authority/policy.json")), [])
+
+    def test_signing_policy_drift_blocks(self) -> None:
+        policy = load(ROOT / "authority/policy.json")
+        policy["signing"]["certificate_identity"] = "untrusted"
+        self.assertIn("SIGNING_AUTHORITY_POLICY_INVALID", policy_blockers(policy))
+
+    def test_keyless_bootstrap_workflow_is_closed(self) -> None:
+        self.assertEqual(workflow_blockers(ROOT), [])
+
     def test_generation_zero_request_is_closed(self) -> None:
         self.assertEqual(request_blockers(request(), POLICY), [])
 

@@ -30,4 +30,26 @@ jobs:
           for request in requests/*.json; do
             python scripts/verify_authority.py --request "$request"
           done
-
+      - name: Verify every persisted authority-state attestation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          for state in state/generation-*.json; do
+            [[ "$state" == *.sigstore.json ]] && continue
+            bundle="${state%.json}.sigstore.json"
+            test -s "$bundle"
+            workflow_sha="$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["workflow"]["sha"])' "$state")"
+            gh attestation verify "$state" \
+              --bundle "$bundle" \
+              --repo sandmantesting/venatr-release-authority \
+              --cert-identity "https://github.com/sandmantesting/venatr-release-authority/.github/workflows/bootstrap-generation-zero.yml@refs/heads/main" \
+              --cert-oidc-issuer "https://token.actions.githubusercontent.com" \
+              --signer-workflow "sandmantesting/venatr-release-authority/.github/workflows/bootstrap-generation-zero.yml" \
+              --signer-digest "$workflow_sha" \
+              --source-ref refs/heads/main \
+              --source-digest "$workflow_sha" \
+              --deny-self-hosted-runners
+          done
