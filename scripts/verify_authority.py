@@ -25,6 +25,7 @@ EXPECTED_SIGNING = {
     "repository_owner_id": 306626219,
     "environment": "venatr-production-promotion",
     "workflow_path": ".github/workflows/bootstrap-generation-zero.yml",
+    "qualification_workflow_path": ".github/workflows/verify-keyless-authority.yml",
     "trusted_root": "sigstore_public_good_tuf",
     "transparency_log": "rekor",
     "offline_bundle_required": True,
@@ -146,6 +147,27 @@ def workflow_blockers(root: Path) -> list[str]:
     return sorted(set(blockers))
 
 
+def qualification_workflow_blockers(root: Path) -> list[str]:
+    path = root / ".github/workflows/verify-keyless-authority.yml"
+    if not path.is_file():
+        return ["KEYLESS_QUALIFICATION_WORKFLOW_MISSING"]
+    content = path.read_text(encoding="utf-8")
+    required = (
+        "environment: venatr-production-promotion",
+        "runs-on: ubuntu-24.04",
+        "attestations: write",
+        "actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6",
+        "--cert-identity \"https://github.com/sandmantesting/venatr-release-authority/.github/workflows/verify-keyless-authority.yml@refs/heads/main\"",
+        "--source-ref refs/heads/main",
+        "--deny-self-hosted-runners",
+        "verifiedTimestamps",
+    )
+    forbidden = ("aws-actions/", "awskms://", "KMS_KEY_URI", "sigstore/cosign")
+    blockers = [f"KEYLESS_QUALIFICATION_REQUIREMENT_MISSING:{value}" for value in required if value not in content]
+    blockers.extend(f"KEYLESS_QUALIFICATION_FORBIDDEN:{value}" for value in forbidden if value in content)
+    return sorted(set(blockers))
+
+
 def hygiene_blockers(root: Path) -> list[str]:
     blockers: list[str] = []
     for path in sorted(root.rglob("*")):
@@ -176,6 +198,7 @@ def main() -> int:
     blockers = hygiene_blockers(args.root.resolve())
     blockers.extend(policy_blockers(policy))
     blockers.extend(workflow_blockers(args.root.resolve()))
+    blockers.extend(qualification_workflow_blockers(args.root.resolve()))
     if args.request:
         blockers.extend(request_blockers(load(args.request.resolve()), policy))
     result = {"status": "passed" if not blockers else "blocked", "blockers": sorted(set(blockers))}
