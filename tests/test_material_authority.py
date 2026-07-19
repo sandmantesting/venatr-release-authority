@@ -13,6 +13,7 @@ from scripts.verify_material_authority import canonical, digest, verify_packet
 SOURCE = "a" * 40
 TREE = "b" * 40
 CANDIDATE_SHA = "sha256:" + "c" * 64
+TRUST_SHA = "sha256:" + "d" * 64
 
 
 def write(path: Path, value: dict) -> str:
@@ -44,7 +45,7 @@ def packet(root: Path) -> Path:
                 "sourceRevision": SOURCE,
                 "sourceTree": TREE,
                 "candidatePlanSha256": CANDIDATE_SHA,
-                "trustPolicySha256": "sha256:" + "d" * 64,
+                "trustPolicySha256": TRUST_SHA,
             }
             relative = f"evidence/{name}.{suffix}.json"
             receipt_sha = write(root / relative, receipt)
@@ -70,7 +71,9 @@ def packet(root: Path) -> Path:
     evidence = {
         "contract": "venatr_build_material_evidence_index_v1",
         "source_revision": SOURCE,
+        "source_tree": TREE,
         "candidate_plan_sha256": CANDIDATE_SHA,
+        "trust_policy_sha256": TRUST_SHA,
         "materials": material_rows,
     }
     evidence["index_sha256"] = digest(canonical(evidence))
@@ -81,7 +84,9 @@ def packet(root: Path) -> Path:
         "approved_at": now,
         "policy": "venatr-appliance-production-material-trust",
         "source_revision": SOURCE,
+        "source_tree": TREE,
         "candidate_plan_sha256": CANDIDATE_SHA,
+        "trust_policy_sha256": TRUST_SHA,
         "evidence_index_sha256": evidence["index_sha256"],
         "principals": [
             {"role": "material-acquirer", "identity": "sigstore:workflow"},
@@ -97,7 +102,9 @@ def packet(root: Path) -> Path:
         "metadata": {
             "status": "production-approved",
             "sourceRevision": SOURCE,
+            "sourceTree": TREE,
             "candidatePlanSha256": CANDIDATE_SHA,
+            "trustPolicySha256": TRUST_SHA,
             "evidenceIndexSha256": evidence["index_sha256"],
             "approvalSha256": approval["approval_sha256"],
         },
@@ -110,6 +117,7 @@ def packet(root: Path) -> Path:
         "source_revision": SOURCE,
         "source_tree": TREE,
         "candidate_plan_sha256": CANDIDATE_SHA,
+        "trust_policy_sha256": TRUST_SHA,
         "evidence_index": "evidence-index.json",
         "evidence_index_sha256": evidence_file_sha,
         "approval": "approval.json",
@@ -148,6 +156,22 @@ class MaterialAuthorityTests(unittest.TestCase):
             receipt = next((root / "evidence").glob("*.json"))
             receipt.write_text("{}", encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "receipt digest mismatch"):
+                verify_packet(authority_path)
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            authority_path = packet(root)
+            evidence_path = root / "evidence-index.json"
+            evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+            evidence["source_tree"] = "e" * 40
+            evidence.pop("index_sha256")
+            evidence["index_sha256"] = digest(canonical(evidence))
+            authority = json.loads(authority_path.read_text(encoding="utf-8"))
+            authority["evidence_index_sha256"] = write(evidence_path, evidence)
+            authority.pop("authority_sha256")
+            authority["authority_sha256"] = digest(canonical(authority))
+            write(authority_path, authority)
+            with self.assertRaisesRegex(ValueError, "source tree divergence"):
                 verify_packet(authority_path)
 
 
