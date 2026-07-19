@@ -16,6 +16,20 @@ POLICY = ROOT / "authority/policy.json"
 SHA256 = re.compile(r"^sha256:[0-9a-f]{64}$")
 OID = re.compile(r"^[0-9a-f]{40}$")
 PHASES = tuple(f"P{number}" for number in range(8))
+EXPECTED_SIGNING = {
+    "mode": "github_oidc_sigstore_public_good_keyless",
+    "cost_model": "zero_monetary_service_cost",
+    "issuer": "https://token.actions.githubusercontent.com",
+    "certificate_identity": "https://github.com/sandmantesting/venatr-release-authority/.github/workflows/bootstrap-generation-zero.yml@refs/heads/main",
+    "repository_id": 1305288232,
+    "repository_owner_id": 306626219,
+    "environment": "venatr-production-promotion",
+    "workflow_path": ".github/workflows/bootstrap-generation-zero.yml",
+    "trusted_root": "sigstore_public_good_tuf",
+    "transparency_log": "rekor",
+    "offline_bundle_required": True,
+    "raw_private_key": "forbidden",
+}
 BANNED_SUFFIXES = {".7z", ".dll", ".env", ".exe", ".gz", ".pem", ".pfx", ".pyc", ".tar", ".whl", ".zip", ".zst"}
 BANNED_CONTENT = (
     re.compile(rb"-----BEGIN [A-Z ]*PRIVATE KEY-----"),
@@ -87,6 +101,51 @@ def request_blockers(request: dict[str, Any], policy: dict[str, Any]) -> list[st
     return sorted(set(blockers))
 
 
+def policy_blockers(policy: dict[str, Any]) -> list[str]:
+    blockers: list[str] = []
+    if policy.get("contract") != "venatr_public_release_authority_policy_v1":
+        blockers.append("AUTHORITY_POLICY_CONTRACT_INVALID")
+    if policy.get("status") != "ratified":
+        blockers.append("AUTHORITY_POLICY_STATUS_INVALID")
+    if policy.get("authority_repository") != "sandmantesting/venatr-release-authority":
+        blockers.append("AUTHORITY_REPOSITORY_INVALID")
+    if policy.get("source_repository") != "sandmantesting/Venatr":
+        blockers.append("SOURCE_REPOSITORY_POLICY_INVALID")
+    if policy.get("signing") != EXPECTED_SIGNING:
+        blockers.append("SIGNING_AUTHORITY_POLICY_INVALID")
+    if policy.get("administrator_bypass") != "forbidden" or policy.get("self_approval") != "forbidden":
+        blockers.append("AUTHORITY_BYPASS_POLICY_INVALID")
+    bootstrap = policy.get("bootstrap")
+    if not isinstance(bootstrap, dict) or bootstrap.get("generation") != 0:
+        blockers.append("BOOTSTRAP_POLICY_INVALID")
+    elif bootstrap.get("previous_state") is not None or bootstrap.get("required_phases") != list(PHASES):
+        blockers.append("BOOTSTRAP_POLICY_INVALID")
+    return sorted(set(blockers))
+
+
+def workflow_blockers(root: Path) -> list[str]:
+    path = root / ".github/workflows/bootstrap-generation-zero.yml"
+    if not path.is_file():
+        return ["BOOTSTRAP_WORKFLOW_MISSING"]
+    content = path.read_text(encoding="utf-8")
+    required = (
+        "environment: venatr-production-promotion",
+        "runs-on: ubuntu-24.04",
+        "attestations: write",
+        "ref: main",
+        "actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6",
+        "--bundle state/generation-0.sigstore.json",
+        "--cert-oidc-issuer \"https://token.actions.githubusercontent.com\"",
+        "--signer-digest \"$GITHUB_WORKFLOW_SHA\"",
+        "--source-ref refs/heads/main",
+        "--deny-self-hosted-runners",
+    )
+    forbidden = ("aws-actions/", "awskms://", "KMS_KEY_URI", "release-signing-root.pub", "sigstore/cosign")
+    blockers = [f"BOOTSTRAP_WORKFLOW_REQUIREMENT_MISSING:{value}" for value in required if value not in content]
+    blockers.extend(f"BOOTSTRAP_WORKFLOW_FORBIDDEN:{value}" for value in forbidden if value in content)
+    return sorted(set(blockers))
+
+
 def hygiene_blockers(root: Path) -> list[str]:
     blockers: list[str] = []
     for path in sorted(root.rglob("*")):
@@ -115,8 +174,8 @@ def main() -> int:
     args = parser.parse_args()
     policy = load(POLICY)
     blockers = hygiene_blockers(args.root.resolve())
-    if policy.get("contract") != "venatr_public_release_authority_policy_v1" or policy.get("status") != "ratified":
-        blockers.append("AUTHORITY_POLICY_INVALID")
+    blockers.extend(policy_blockers(policy))
+    blockers.extend(workflow_blockers(args.root.resolve()))
     if args.request:
         blockers.extend(request_blockers(load(args.request.resolve()), policy))
     result = {"status": "passed" if not blockers else "blocked", "blockers": sorted(set(blockers))}
@@ -126,4 +185,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

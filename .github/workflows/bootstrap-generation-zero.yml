@@ -12,10 +12,11 @@ permissions:
   contents: write
   id-token: write
   pull-requests: write
+  attestations: write
 
 jobs:
   bootstrap:
-    name: Sign generation zero through KMS
+    name: Attest generation zero through keyless Sigstore
     environment: venatr-production-promotion
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -24,14 +25,6 @@ jobs:
         with: {persist-credentials: true, clean: true, ref: main}
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with: {python-version: "3.12.10"}
-      - uses: aws-actions/configure-aws-credentials@ff717079ee2060e4bcee96c4779b553acc87447c # v4
-        with:
-          role-to-assume: ${{ vars.VENATR_AUTHORITY_SIGNING_ROLE_ARN }}
-          aws-region: ${{ vars.VENATR_AUTHORITY_SIGNING_REGION }}
-          audience: venatr-release-authority
-          role-session-name: venatr-authority-${{ github.run_id }}-${{ github.run_attempt }}
-      - uses: sigstore/cosign-installer@ba7bc0a3fef59531c69a25acd34668d6d3fe6f22 # v4.1.0
-        with: {cosign-release: v3.0.6}
       - name: Validate protected-main request and create state
         env:
           REQUEST_PATH: ${{ inputs.candidate-request-path }}
@@ -52,17 +45,31 @@ jobs:
             --workflow-ref "$GITHUB_WORKFLOW_REF" --workflow-sha "$GITHUB_WORKFLOW_SHA" \
             --run-id "$GITHUB_RUN_ID" --run-attempt "$GITHUB_RUN_ATTEMPT"
           echo "CANDIDATE_ID=$CANDIDATE_ID" >> "$GITHUB_ENV"
-      - name: KMS-sign the exact monotonic state
+      - name: Attest the exact monotonic state
+        id: attest
+        uses: actions/attest@f7c74d28b9d84cb8768d0b8ca14a4bac6ef463e6 # v4.2.0
+        with:
+          subject-path: state/generation-0.json
+      - name: Persist and independently verify the Sigstore bundle
         env:
-          KMS_KEY_URI: ${{ vars.VENATR_AUTHORITY_KMS_KEY_URI }}
+          ATTESTATION_BUNDLE: ${{ steps.attest.outputs.bundle-path }}
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_WORKFLOW_SHA: ${{ github.workflow_sha }}
         shell: bash
         run: |
           set -euo pipefail
-          [[ "$KMS_KEY_URI" == awskms://* ]]
-          cosign sign-blob --yes --key "$KMS_KEY_URI" \
-            --bundle state/generation-0.sigstore.json state/generation-0.json
-          cosign verify-blob --key authority/release-signing-root.pub \
-            --bundle state/generation-0.sigstore.json state/generation-0.json
+          test -s "$ATTESTATION_BUNDLE"
+          cp -- "$ATTESTATION_BUNDLE" state/generation-0.sigstore.json
+          gh attestation verify state/generation-0.json \
+            --bundle state/generation-0.sigstore.json \
+            --repo "$GITHUB_REPOSITORY" \
+            --cert-identity "https://github.com/sandmantesting/venatr-release-authority/.github/workflows/bootstrap-generation-zero.yml@refs/heads/main" \
+            --cert-oidc-issuer "https://token.actions.githubusercontent.com" \
+            --signer-workflow "sandmantesting/venatr-release-authority/.github/workflows/bootstrap-generation-zero.yml" \
+            --signer-digest "$GITHUB_WORKFLOW_SHA" \
+            --source-ref refs/heads/main \
+            --source-digest "$GITHUB_WORKFLOW_SHA" \
+            --deny-self-hosted-runners
       - name: Open the independently reviewed state-persistence PR
         env:
           GH_TOKEN: ${{ github.token }}
@@ -78,4 +85,4 @@ jobs:
           git push origin "$BRANCH"
           gh pr create --base main --head "$BRANCH" \
             --title "release: persist Venatr generation zero" \
-            --body "KMS-signed generation-zero authority state. Requires independent review and Authority CI. The protected squash merge must not modify either signed file."
+            --body "Keyless Sigstore-attested generation-zero authority state with public Rekor transparency. Requires independent review and Authority CI. The protected squash merge must not modify either signed file."
