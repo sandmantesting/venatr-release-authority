@@ -7,6 +7,7 @@ from pathlib import Path
 
 from scripts.verify_authority import (
     ROOT,
+    action_pin_blockers,
     canonical,
     digest,
     hygiene_blockers,
@@ -58,6 +59,9 @@ class AuthorityVerifierTests(unittest.TestCase):
 
     def test_keyless_qualification_workflow_is_closed(self) -> None:
         self.assertEqual(qualification_workflow_blockers(ROOT), [])
+
+    def test_every_action_is_commit_pinned(self) -> None:
+        self.assertEqual(action_pin_blockers(ROOT), [])
 
     def test_generation_zero_request_is_closed(self) -> None:
         self.assertEqual(request_blockers(request(), POLICY), [])
