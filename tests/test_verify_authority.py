@@ -35,6 +35,10 @@ def request() -> dict:
         "source_archive_sha256": "sha256:" + "c" * 64,
         "release_definition_sha256": "sha256:" + "d" * 64,
         "material_snapshot_sha256": "sha256:" + "e" * 64,
+        "release_set_sha256": "sha256:" + "f" * 64,
+        "evidence_root_index_sha256": "sha256:" + "1" * 64,
+        "role_assignments_sha256": "sha256:" + "2" * 64,
+        "environment_assignments_sha256": "sha256:" + "3" * 64,
         "qualification_evidence": {
             f"P{number}": {"manifest_sha256": "sha256:" + str(number) * 64, "status": "passed"}
             for number in range(8)

@@ -5,8 +5,9 @@ Venatr implementation source, private artifacts, credentials, customer data, or
 decryption material.
 
 The private source repository is identified only by repository identity, immutable
-Git commit and tree OIDs, a deterministic source-archive SHA-256 digest, and signed
-qualification evidence digests. A protected workflow may create generation zero only
+Git commit and tree OIDs, deterministic source-archive and release-set SHA-256
+digests, the immutable evidence-root index, role/environment assignments, and
+qualification phase-manifest digests. A protected workflow may create generation zero only
 after fresh P0–P7 evidence is supplied. The protected workflow uses GitHub OIDC and
 the Sigstore Public Good instance to issue a short-lived signing certificate, records
 the attestation in Rekor, and persists the complete offline-verifiable bundle.

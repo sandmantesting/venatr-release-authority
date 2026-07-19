@@ -58,7 +58,9 @@ def request_blockers(request: dict[str, Any], policy: dict[str, Any]) -> list[st
     expected_keys = {
         "contract", "candidate_id", "generation", "source_repository", "source_revision",
         "source_tree", "source_archive_sha256", "release_definition_sha256",
-        "material_snapshot_sha256", "qualification_evidence", "previous_authority_state_sha256",
+        "material_snapshot_sha256", "release_set_sha256", "evidence_root_index_sha256",
+        "role_assignments_sha256", "environment_assignments_sha256",
+        "qualification_evidence", "previous_authority_state_sha256",
         "request_sha256",
     }
     if set(request) != expected_keys:
@@ -78,7 +80,11 @@ def request_blockers(request: dict[str, Any], policy: dict[str, Any]) -> list[st
         blockers.append("SOURCE_IDENTITY_INVALID")
     if request.get("candidate_id") != expected_id:
         blockers.append("CANDIDATE_ID_INVALID")
-    for name in ("source_archive_sha256", "release_definition_sha256", "material_snapshot_sha256"):
+    for name in (
+        "source_archive_sha256", "release_definition_sha256", "material_snapshot_sha256",
+        "release_set_sha256", "evidence_root_index_sha256", "role_assignments_sha256",
+        "environment_assignments_sha256",
+    ):
         if SHA256.fullmatch(str(request.get(name) or "")) is None:
             blockers.append(f"DIGEST_INVALID:{name}")
     evidence = request.get("qualification_evidence")
