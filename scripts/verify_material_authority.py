@@ -64,6 +64,7 @@ def verify_packet(authority_path: Path, *, now: datetime | None = None) -> dict[
     authority = load(authority_path)
     required = {
         "contract", "candidate_id", "source_revision", "source_tree", "candidate_plan_sha256",
+        "trust_policy_sha256",
         "evidence_index", "evidence_index_sha256", "approval", "approval_sha256",
         "production_plan", "production_plan_sha256", "authority_sha256",
     }
@@ -72,7 +73,7 @@ def verify_packet(authority_path: Path, *, now: datetime | None = None) -> dict[
     self_hash(authority, "authority_sha256")
     if OID.fullmatch(str(authority["source_revision"])) is None or OID.fullmatch(str(authority["source_tree"])) is None:
         raise ValueError("material authority source identity invalid")
-    for field in ("candidate_plan_sha256", "evidence_index_sha256", "approval_sha256", "production_plan_sha256"):
+    for field in ("candidate_plan_sha256", "trust_policy_sha256", "evidence_index_sha256", "approval_sha256", "production_plan_sha256"):
         if SHA256.fullmatch(str(authority[field])) is None:
             raise ValueError(f"material authority digest invalid: {field}")
 
@@ -96,8 +97,12 @@ def verify_packet(authority_path: Path, *, now: datetime | None = None) -> dict[
     for value in (evidence, approval):
         if value.get("source_revision") != authority["source_revision"]:
             raise ValueError("material packet source revision divergence")
+        if value.get("source_tree") != authority["source_tree"]:
+            raise ValueError("material packet source tree divergence")
         if value.get("candidate_plan_sha256") != authority["candidate_plan_sha256"]:
             raise ValueError("material packet candidate plan divergence")
+        if value.get("trust_policy_sha256") != authority["trust_policy_sha256"]:
+            raise ValueError("material packet trust policy divergence")
     if approval.get("evidence_index_sha256") != evidence_self_sha:
         raise ValueError("approval does not bind evidence index")
     principals = approval.get("principals") or []
@@ -140,7 +145,9 @@ def verify_packet(authority_path: Path, *, now: datetime | None = None) -> dict[
                 or receipt.get("artifactSha256") != source["sha256"]
                 or receipt.get("authority") != source["authority"] or receipt.get("method") != source["method"]
                 or receipt.get("sourceRevision") != authority["source_revision"]
+                or receipt.get("sourceTree") != authority["source_tree"]
                 or receipt.get("candidatePlanSha256") != authority["candidate_plan_sha256"]
+                or receipt.get("trustPolicySha256") != authority["trust_policy_sha256"]
             ):
                 raise ValueError(f"material receipt semantics invalid: {name}")
         indexed[name] = sources
@@ -151,7 +158,9 @@ def verify_packet(authority_path: Path, *, now: datetime | None = None) -> dict[
         plan.get("kind") != "ApplianceBuildMaterialAcquisitionPlan"
         or metadata.get("status") != "production-approved"
         or metadata.get("sourceRevision") != authority["source_revision"]
+        or metadata.get("sourceTree") != authority["source_tree"]
         or metadata.get("candidatePlanSha256") != authority["candidate_plan_sha256"]
+        or metadata.get("trustPolicySha256") != authority["trust_policy_sha256"]
         or metadata.get("evidenceIndexSha256") != evidence_self_sha
         or metadata.get("approvalSha256") != approval_self_sha
         or len(materials) != 9
