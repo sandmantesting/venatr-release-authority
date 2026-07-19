@@ -16,8 +16,10 @@
     "mode": "github_oidc_conditioned_non_exportable_kms",
     "issuer": "https://token.actions.githubusercontent.com",
     "audience": "venatr-release-authority",
+    "subject": "repo:sandmantesting/venatr-release-authority:environment:venatr-production-promotion",
     "environment": "venatr-production-promotion",
     "workflow_path": ".github/workflows/bootstrap-generation-zero.yml",
+    "pinned_public_key": "authority/release-signing-root.pub",
     "raw_private_key": "forbidden"
   },
   "bootstrap": {

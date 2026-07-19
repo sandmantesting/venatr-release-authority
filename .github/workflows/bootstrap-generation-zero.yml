@@ -28,6 +28,7 @@ jobs:
         with:
           role-to-assume: ${{ vars.VENATR_AUTHORITY_SIGNING_ROLE_ARN }}
           aws-region: ${{ vars.VENATR_AUTHORITY_SIGNING_REGION }}
+          audience: venatr-release-authority
           role-session-name: venatr-authority-${{ github.run_id }}-${{ github.run_attempt }}
       - uses: sigstore/cosign-installer@ba7bc0a3fef59531c69a25acd34668d6d3fe6f22 # v4.1.0
         with: {cosign-release: v3.0.6}
